@@ -78,6 +78,23 @@ docker run --rm -p 8000:8000 -e MCP_ALLOWED_HOSTS=localhost:8000 ghcr.io/vicgame
 curl localhost:8000/health
 ```
 
+### Running it in public
+
+HTTP mode is built to sit on the open internet behind a reverse proxy:
+
+| Protection | Default | Flag / env |
+| --- | --- | --- |
+| Rate limit per IP (token bucket, `429` + `Retry-After`) | 30/min, burst 10 | `--rate-limit` `MCP_RATE_LIMIT`, `--rate-burst` `MCP_RATE_BURST` |
+| Requests in flight (`503` beyond it) | 16 | `--max-concurrency` `MCP_MAX_CONCURRENCY` |
+| Request body (`413`) | 64 KB | `--max-body-bytes` `MCP_MAX_BODY_BYTES` |
+| Host header allowlist (DNS rebinding) | off | `--allowed-hosts` `MCP_ALLOWED_HOSTS` |
+| Proxies whose `X-Forwarded-For` is trusted | none | `--trusted-proxies` `MCP_TRUSTED_PROXIES` (CIDRs) |
+
+The client IP is the socket peer unless that peer is a trusted proxy, so a client can't pick its own
+IP by sending `X-Forwarded-For`. `/health` is not rate limited. Tools only call fixed BrasilAPI, BCB
+and IBGE URLs and validate their arguments before building them, so there is no way to make the
+server fetch an arbitrary URL. The Docker image runs as a non-root user and works with `--read-only`.
+
 ## Example
 
 > **You:** How many business days are there in November 2026, and what's the Selic rate today?
@@ -106,6 +123,7 @@ src/mcp_server_brasil/
 ├── sources.py        # BrasilAPI / BCB / IBGE clients with cache + retry
 ├── documents.py      # CPF, CNPJ (alphanumeric) and CEP validation
 ├── business_days.py  # business-day arithmetic
+├── http_guard.py     # rate limit, concurrency and body size for HTTP mode
 └── __main__.py       # CLI: stdio or Streamable HTTP
 ```
 

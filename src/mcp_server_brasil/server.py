@@ -31,6 +31,15 @@ UF = Literal[
 ]  # fmt: skip
 
 
+# CPF, CNPJ e CEP formatados cabem folgados em 32; mais que isso é lixo ou abuso.
+MAX_ID_LEN = 32
+
+
+def _check_len(value: str, field: str) -> None:
+    if len(value) > MAX_ID_LEN:
+        raise ToolError(f"`{field}` muito longo (máximo {MAX_ID_LEN} caracteres)")
+
+
 def build_server(client: PublicDataClient | None = None) -> MCPServer:
     data = client or PublicDataClient()
     mcp = MCPServer(
@@ -52,6 +61,7 @@ def build_server(client: PublicDataClient | None = None) -> MCPServer:
     @mcp.tool(title="Consultar CEP", annotations=READ_ONLY)
     async def consultar_cep(cep: str) -> dict[str, Any]:
         """Endereço (logradouro, bairro, cidade, UF e coordenadas quando houver) de um CEP."""
+        _check_len(cep, "cep")
         try:
             normalized = normalize_cep(cep)
         except InvalidDocumentError as exc:
@@ -72,6 +82,7 @@ def build_server(client: PublicDataClient | None = None) -> MCPServer:
     @mcp.tool(title="Consultar CNPJ", annotations=READ_ONLY)
     async def consultar_cnpj(cnpj: str) -> dict[str, Any]:
         """Dados cadastrais públicos de uma empresa na Receita Federal a partir do CNPJ."""
+        _check_len(cnpj, "cnpj")
         check = check_document(cnpj)
         if check.tipo != "CNPJ" or not check.valido:
             raise ToolError(f"CNPJ inválido: {cnpj!r}")
@@ -105,6 +116,7 @@ def build_server(client: PublicDataClient | None = None) -> MCPServer:
     @mcp.tool(title="Validar CPF/CNPJ", annotations=OFFLINE)
     def validar_documento(documento: str) -> dict[str, Any]:
         """Valida os dígitos verificadores de um CPF ou CNPJ (numérico ou alfanumérico), sem rede."""
+        _check_len(documento, "documento")
         check = check_document(documento)
         return {
             "tipo": check.tipo,
