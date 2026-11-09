@@ -1,0 +1,56 @@
+[project]
+name = "mcp-server-brasil"
+version = "0.1.0"
+description = "MCP server for Brazilian public data: CEP, CNPJ (alphanumeric too), holidays, business days, Banco Central and IBGE."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Victor Gabriel Andrade de Melo", email = "victor.845.melo@gmail.com" }]
+requires-python = ">=3.12"
+keywords = ["mcp", "model-context-protocol", "llm", "agents", "brasil", "cnpj", "cep", "bcb", "ibge"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "httpx>=0.28",
+    "mcp>=2.3",
+    "pydantic>=2.9",
+]
+
+[project.urls]
+Homepage = "https://github.com/vicgamelo/mcp-server-brasil"
+Issues = "https://github.com/vicgamelo/mcp-server-brasil/issues"
+
+[project.scripts]
+mcp-server-brasil = "mcp_server_brasil.__main__:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ASYNC"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.mypy]
+strict = true
+packages = ["mcp_server_brasil"]
+mypy_path = "src"
