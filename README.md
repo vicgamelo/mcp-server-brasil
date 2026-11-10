@@ -42,6 +42,24 @@ typed, validated tools, so the model asks instead of guessing.
 It also exposes the resource `brasil://indicadores` (indicator catalog with SGS codes) and the
 prompt `resumo_macro` (rates, inflation and FX summary).
 
+### News and public information (`--server noticias`)
+
+A second tool set, served on its own (`mcp-server-brasil --server noticias`, or `MCP_SERVER=noticias`):
+
+| Tool | What it does | Source |
+| --- | --- | --- |
+| `buscar_noticias` | Recent news for a query: title, outlet, date, link | Google News RSS, InfoMoney |
+| `ultimas_noticias` | Latest items from an outlet's feed, optionally filtered | Agência Brasil, g1, InfoMoney, Poder360 |
+| `ler_noticia` | Article text (up to ~6k characters) | Direct links from an allowlist |
+| `noticias_ibge` | IBGE news and releases (PNAD, IPCA, GDP...) | IBGE |
+| `senado_materias` | Senate bills mentioning a term, newest first | Senado (dados abertos) |
+| `camara_proposicoes` | Chamber of Deputies bills mentioning a term | Câmara (dados abertos) |
+
+`ler_noticia` is not a generic fetcher: it only reads https pages from a fixed list of outlets and
+government sites, checks robots.txt, refuses redirects that leave the list, caps the download at
+1.5 MB and returns plain text only. Google News links are listed but not read (they don't point to
+the article itself); results carry `legivel: true` when `ler_noticia` can open them.
+
 ## Quickstart
 
 ### Claude Code

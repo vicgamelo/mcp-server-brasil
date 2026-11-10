@@ -2,12 +2,14 @@
 
 mcp-server-brasil                      # stdio (Claude Desktop, Claude Code, Cursor...)
 mcp-server-brasil --http --port 8000   # Streamable HTTP at /mcp, health check at /health
+mcp-server-brasil --server noticias    # news and public information instead of the data tools
 """
 
 from __future__ import annotations
 
 import argparse
 import os
+from collections.abc import Callable
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
@@ -16,13 +18,22 @@ from starlette.responses import JSONResponse
 
 from . import __version__
 from .http_guard import ASGIApp, GuardConfig, HttpGuard, parse_networks
+from .news import build_news_server
 from .server import build_server
+
+SERVERS: dict[str, Callable[[], MCPServer]] = {"brasil": build_server, "noticias": build_news_server}
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     env = os.getenv
     parser = argparse.ArgumentParser(prog="mcp-server-brasil")
     parser.add_argument("--http", action="store_true", help="serve Streamable HTTP instead of stdio")
+    parser.add_argument(
+        "--server",
+        choices=sorted(SERVERS),
+        default=env("MCP_SERVER", "brasil"),
+        help="which tool set to serve: public data (brasil) or news and public information (noticias)",
+    )
     parser.add_argument("--host", default=env("HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(env("PORT", "8000")))
     parser.add_argument(
@@ -49,7 +60,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def build_http_app(args: argparse.Namespace, server: MCPServer | None = None) -> ASGIApp:
-    server = server or build_server()
+    server = server or SERVERS[args.server]()
 
     @server.custom_route("/health", methods=["GET"])  # type: ignore[untyped-decorator]
     async def health(_: Request) -> JSONResponse:
@@ -77,7 +88,7 @@ def build_http_app(args: argparse.Namespace, server: MCPServer | None = None) ->
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     if not args.http:
-        build_server().run("stdio")
+        SERVERS[args.server]().run("stdio")
         return
 
     import uvicorn
